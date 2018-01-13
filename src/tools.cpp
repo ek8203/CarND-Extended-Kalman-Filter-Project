@@ -70,7 +70,7 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 
 	//check division by zero
 	float p1 = px*px + py*py;
-	if (p1 == 0.0){
+	if (p1 < 0.0001){
 		cout << "Tools::CalculateJacobian() - Error - Devide by zero!" << endl;
 		return Hj;
 	}
@@ -90,3 +90,48 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 
 	return Hj;
 }
+
+VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
+	/**
+	 * Convert Cartesian coordinates to polar:
+	 * Input x_cort is 4x1 vector in Cartesian coordinates: px, py,
+	 * Output is a 3x1 vector in polar coordinate: ro, theta, ro_dot
+	 */
+	VectorXd x_polar(1,3);
+
+	float ro;
+	float theta;
+	float ro_dot;
+
+	// Cartesian coordinates
+	float	px = x_cort(0),
+		  	py = x_cort(1),
+				vx = x_cort(2),
+				vy = x_cort(3);
+
+	// calculate distance (range) ro
+	ro = sqrt(px*px + py*py);
+
+	if ((fabs(px) < 0.0001) || (fabs(ro) < 0.0001)) {
+		cout << "Tools::CartesianToPolar() - Error - Devide by zero!" << endl;
+		return x_polar;
+	}
+
+	// calculate angle theta in range -pi < theta < pi
+	theta = atan2(py, px);
+	float pi_2 = 2*M_PI;
+	if(theta > 0)
+		while(theta >= pi_2)	theta -= pi_2;
+	else
+		while(theta <= -pi_2)	theta += pi_2;
+
+	// calculate range rate ro_dot
+	ro_dot = (px*vx + py*vy)/ro;
+
+	// output vector
+	x_polar << ro, theta, ro_dot;
+
+	return x_polar;
+}
+
+
