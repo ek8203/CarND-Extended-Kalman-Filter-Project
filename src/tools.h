@@ -33,6 +33,7 @@ public:
    * A helper method to convert from Cartesian to Polar coordinates
    */
   VectorXd CartesianToPolar(const VectorXd& x_cort);
+  VectorXd PolarToCartesian(const VectorXd& x_polar);
 
 };
 

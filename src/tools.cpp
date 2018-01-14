@@ -95,13 +95,13 @@ VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
 	/**
 	 * Convert Cartesian coordinates to polar:
 	 * Input x_cort is 4x1 vector in Cartesian coordinates: px, py,
-	 * Output is a 3x1 vector in polar coordinate: ro, theta, ro_dot
+	 * Output is a 3x1 vector in polar coordinate: rho, theta, rho_dot
 	 */
-	VectorXd x_polar(1,3);
+	VectorXd x_polar(3);
 
-	float ro;
+	float rho;
 	float theta;
-	float ro_dot;
+	float rho_dot;
 
 	// Cartesian coordinates
 	float	px = x_cort(0),
@@ -110,9 +110,9 @@ VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
 				vy = x_cort(3);
 
 	// calculate distance (range) ro
-	ro = sqrt(px*px + py*py);
+	rho = sqrt(px*px + py*py);
 
-	if ((fabs(px) < 0.0001) || (fabs(ro) < 0.0001)) {
+	if ((fabs(px) < 0.0001) || (fabs(rho) < 0.0001)) {
 		cout << "Tools::CartesianToPolar() - Error - Devide by zero!" << endl;
 		return x_polar;
 	}
@@ -126,12 +126,29 @@ VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
 		while(theta <= -pi_2)	theta += pi_2;
 
 	// calculate range rate ro_dot
-	ro_dot = (px*vx + py*vy)/ro;
+	rho_dot = (px*vx + py*vy)/rho;
 
 	// output vector
-	x_polar << ro, theta, ro_dot;
+	x_polar << rho, theta, rho_dot;
 
 	return x_polar;
 }
 
+VectorXd Tools::PolarToCartesian(const VectorXd& x_polar)	{
+
+	VectorXd x_cort(4);
+
+	float rho = x_polar(0);
+	float theta = x_polar(1);
+	float rho_dot = x_polar(2);
+
+	float px = rho * cos(theta);
+	float py = rho * sin(theta);
+	float vx = rho_dot * cos(theta);
+	float vy = rho_dot * sin(theta);
+
+	x_cort << px, py, vx, vy;
+
+	return x_cort;
+}
 
