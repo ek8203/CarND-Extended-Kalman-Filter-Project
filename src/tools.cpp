@@ -45,48 +45,51 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 
 	//calculate the mean
 	// ... your code here
-	rmse = rmse.array() / estimations.size();
+	rmse = rmse / estimations.size();
 
 	//calculate the squared root
 	// ... your code here
-	rmse = sqrt(rmse.array());
+	rmse = rmse.array().sqrt();
 
 	//return the result
 	return rmse;
 }
 
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
-   /**
-    TODO:
-    * Calculate a Jacobian here.
-   */
-	MatrixXd Hj(3,4);
 
+	MatrixXd Hj(3,4);
 	//recover state parameters
 	float px = x_state(0);
 	float py = x_state(1);
 	float vx = x_state(2);
 	float vy = x_state(3);
 
+	//TODO: YOUR CODE HERE
+	//pre-compute a set of terms to avoid repeated calculation
+	float c1 = px*px + py*py;
 	//check division by zero
-	float p1 = px*px + py*py;
-	if (p1 < 0.0001){
-		cout << "Tools::CalculateJacobian() - Error - Devide by zero!" << endl;
-		return Hj;
+	if(fabs(c1) < 0.0001){
+		cout << "CalculateJacobian () - Error - Division by Zero" << endl;
+		c1 = 0.0001;
 	}
 
-	float p2 = sqrt(p1);
-	float p3 = pow(p1, 1.5);
+	float c2 = sqrt(c1);
+	if(fabs(c2) < 0.001){
+		cout << "CalculateJacobian () - Error - Division by Zero" << endl;
+		c2 = 0.001;
+	}
+
+	float c3 = (c1*c2);
+
+	if(fabs(c3) < 0.0001){
+		cout << "CalculateJacobian () - Error - Division by Zero" << endl;
+		c3 = 0.0001;
+	}
 
 	//compute the Jacobian matrix
-	Hj(0,0) = px/p2;
-	Hj(0,1) = py/p2;
-	Hj(1,0) = -py/p1;
-	Hj(1,1) = px/p1;
-	Hj(2,0) = py*(vx*py - vy*px)/p3;
-	Hj(2,1) = px*(vy*px - vx*py)/p3;
-	Hj(2,2) = px/p2;
-	Hj(2,3) = py/p2;
+	Hj << (px/c2), (py/c2), 0, 0,
+		  	-(py/c1), (px/c1), 0, 0,
+				py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
 
 	return Hj;
 }
@@ -98,6 +101,7 @@ VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
 	 * Output is a 3x1 vector in polar coordinate: rho, theta, rho_dot
 	 */
 	VectorXd x_polar(3);
+	x_polar << 0, 0, 0;
 
 	float rho;
 	float theta;
@@ -109,21 +113,20 @@ VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
 				vx = x_cort(2),
 				vy = x_cort(3);
 
-	// calculate distance (range) ro
+	if (fabs(px) < 0.0001) {
+		px = 0.0001;
+	}
+
+	// calculate distance (range) rho
 	rho = sqrt(px*px + py*py);
 
-	if ((fabs(px) < 0.0001) || (fabs(rho) < 0.0001)) {
+	if (fabs(rho) < 0.0001) {
 		cout << "Tools::CartesianToPolar() - Error - Devide by zero!" << endl;
-		return x_polar;
+		rho = 0.0001;
 	}
 
 	// calculate angle theta in range -pi < theta < pi
 	theta = atan2(py, px);
-	float pi_2 = 2*M_PI;
-	if(theta > 0)
-		while(theta >= pi_2)	theta -= pi_2;
-	else
-		while(theta <= -pi_2)	theta += pi_2;
 
 	// calculate range rate ro_dot
 	rho_dot = (px*vx + py*vy)/rho;
