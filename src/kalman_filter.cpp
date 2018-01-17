@@ -43,7 +43,7 @@ void KalmanFilter::Update(const VectorXd &z) {
 	MatrixXd K = P_ * Ht * S.inverse();
 
 	//new estimate
-	x_ = x_ + (K * y);
+	x_ = x_ + K * y;
 	long x_size = x_.size();
 	MatrixXd I = MatrixXd::Identity(x_size, x_size);
 	P_ = (I - K * H_) * P_;
@@ -58,22 +58,25 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	 * map predicted vector from Cartesian to polar coordinates
 	*/
 	Tools tools;
+
 	VectorXd hx = tools.CartesianToPolar(x_);
+
 	VectorXd y = z - hx;
 
-	// normalize y
+	// normalize y (theta)
+	float theta = y(1);
 	float pi_2 = 2*M_PI;
-	if(y(1) > 0)
-		while(y(1) > M_PI)	y(1) -= pi_2;
-	else
-		while(y(1) < -M_PI)	y(1) += pi_2;
+	while(theta > M_PI)		theta -= pi_2;
+	while(theta < -M_PI)	theta += pi_2;
+	y(1) = theta;
 
 	MatrixXd Ht = H_.transpose();
 	MatrixXd S = H_ * P_ * Ht + R_;
-	MatrixXd K = P_ * Ht * S.inverse();
+	MatrixXd Si = S.inverse();
+	MatrixXd K = P_ * Ht * Si;
 
 	//new estimate
-	VectorXd x = x_ + (K * y);
+	x_ = x_ + K * y;
 	long x_size = x_.size();
 	MatrixXd I = MatrixXd::Identity(x_size, x_size);
 	P_ = (I - K * H_) * P_;

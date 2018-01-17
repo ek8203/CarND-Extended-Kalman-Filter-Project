@@ -16,7 +16,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
     * Calculate the RMSE here.
   */
 	VectorXd rmse(4);
-	rmse << 0,0,0,0;
+	rmse.fill(0.0);
 
     // TODO: YOUR CODE HERE
 
@@ -58,6 +58,8 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 
 	MatrixXd Hj(3,4);
+	Hj.fill(0.0);
+
 	//recover state parameters
 	float px = x_state(0);
 	float py = x_state(1);
@@ -74,46 +76,46 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 	}
 
 	float c2 = sqrt(c1);
-	if(fabs(c2) < 0.001){
+	if(fabs(c2) < 0.0001){
 		cout << "CalculateJacobian () - Error - Division by Zero" << endl;
-		c2 = 0.001;
+		c2 = 0.0001;
 	}
 
-	float c3 = (c1*c2);
-
+	float c3 = c1*c2;
 	if(fabs(c3) < 0.0001){
 		cout << "CalculateJacobian () - Error - Division by Zero" << endl;
 		c3 = 0.0001;
 	}
 
 	//compute the Jacobian matrix
-	Hj << (px/c2), (py/c2), 0, 0,
+	Hj << (px/c2),	(py/c2), 0, 0,
 		  	-(py/c1), (px/c1), 0, 0,
 				py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
 
 	return Hj;
 }
 
-VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
+VectorXd Tools::CartesianToPolar(const VectorXd& x_in)	{
 	/**
 	 * Convert Cartesian coordinates to polar:
-	 * Input x_cort is 4x1 vector in Cartesian coordinates: px, py,
-	 * Output is a 3x1 vector in polar coordinate: rho, theta, rho_dot
+	 * Input is 4x vector in Cartesian coordinates: px, py, vx, vy
+	 * Output is a 3x vector in polar coordinate: rho, theta, rho_dot
 	 */
-	VectorXd x_polar(3);
-	x_polar << 0, 0, 0;
+	VectorXd x_out = VectorXd(3);
+	x_out.fill(0.0);
 
 	float rho;
 	float theta;
 	float rho_dot;
 
 	// Cartesian coordinates
-	float	px = x_cort(0),
-		  	py = x_cort(1),
-				vx = x_cort(2),
-				vy = x_cort(3);
+	float	px = x_in(0),
+		  	py = x_in(1),
+				vx = x_in(2),
+				vy = x_in(3);
 
 	if (fabs(px) < 0.0001) {
+		cout << "Tools::CartesianToPolar() - Error - Devide by zero!" << endl;
 		px = 0.0001;
 	}
 
@@ -132,26 +134,37 @@ VectorXd Tools::CartesianToPolar(const VectorXd& x_cort)	{
 	rho_dot = (px*vx + py*vy)/rho;
 
 	// output vector
-	x_polar << rho, theta, rho_dot;
+	x_out << rho, theta, rho_dot;
 
-	return x_polar;
+	return x_out;
 }
 
-VectorXd Tools::PolarToCartesian(const VectorXd& x_polar)	{
+VectorXd Tools::PolarToCartesian(const VectorXd& x_in)	{
+	/**
+	 * Convert polar coordinates to Cartesian:
+	 * Input is a 3x vector in polar coordinate: rho, theta, rho_dot
+	 * Output is 4x vector in Cartesian coordinates: px, py, vx, vy
+	 */
 
-	VectorXd x_cort(4);
+	VectorXd x_out = VectorXd(4);
+	x_out.fill(0.0);
 
-	float rho = x_polar(0);
-	float theta = x_polar(1);
-	float rho_dot = x_polar(2);
+	float rho = x_in(0);
+	float theta = x_in(1);
+	float rho_dot = x_in(2);
+
+	// normalize y
+	float pi_2 = 2*M_PI;
+	while(theta > M_PI)		theta -= pi_2;
+	while(theta < -M_PI)	theta += pi_2;
 
 	float px = rho * cos(theta);
 	float py = rho * sin(theta);
 	float vx = rho_dot * cos(theta);
 	float vy = rho_dot * sin(theta);
 
-	x_cort << px, py, vx, vy;
+	x_out << px, py, vx, vy;
 
-	return x_cort;
+	return x_out;
 }
 
