@@ -20,5 +20,11 @@ xcuserdata/
 *.moved-aside
 *.xccheckout
 *.xcscmblueprint
-ide_profiles/xcode/Debug/
-ide_profiles/xcode/ExtendedKF.build/
+ide_profiles/
+
+# other
+data/
+Docs/
+install-*
+eclipse_cmake
+
