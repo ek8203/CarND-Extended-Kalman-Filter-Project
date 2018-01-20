@@ -23,8 +23,11 @@ xcuserdata/
 ide_profiles/
 
 # other
-data/
+#data/
 Docs/
 install-*
 eclipse_cmake
+.ipynb_checkpoints/
+data/.ipynb_checkpoints/
+
 

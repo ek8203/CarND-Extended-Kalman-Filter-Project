@@ -4,6 +4,7 @@
 #include <math.h>
 #include "FusionEKF.h"
 #include "tools.h"
+#include <fstream>
 
 using namespace std;
 
@@ -38,7 +39,18 @@ int main()
   vector<VectorXd> estimations;
   vector<VectorXd> ground_truth;
 
-  h.onMessage([&fusionEKF,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  // EK: To save results in a file
+  ofstream fout;
+  const string  fname = "../data/ekf_pos_output.txt";
+
+  fout.open(fname);
+
+  if (!fout.is_open()) {
+    cout << "Unable to open output file " << fname << endl;
+    return -1;
+  }
+
+  h.onMessage([&fusionEKF,&tools,&estimations,&ground_truth, &fout](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
   	// "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -87,7 +99,7 @@ int main()
           		iss >> ro;
           		iss >> theta;
           		iss >> ro_dot;
-          		meas_package.raw_measurements_ << ro,theta, ro_dot;
+          		meas_package.raw_measurements_ << ro, theta, ro_dot;
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
           }
@@ -120,6 +132,27 @@ int main()
           double v1  = fusionEKF.ekf_.x_(2);
           double v2 = fusionEKF.ekf_.x_(3);
 
+          // EK: save results
+          // Output file format: est_px est_py est_vx est_vy meas_px meas_py gt_px gt_py gt_vx gt_vy
+          // est_px est_py est_vx est_vy
+          fout << p_x << "\t" << p_y << "\t" << v1 <<"\t" << v2 << "\t";
+
+          // meas_px meas_py
+          float px,
+                py;
+          if (sensor_type.compare("L") == 0) {
+            px = meas_package.raw_measurements_[0];
+            py = meas_package.raw_measurements_[1];
+          }
+          else if (sensor_type.compare("R") == 0) {
+            px = meas_package.raw_measurements_[0] * cos(meas_package.raw_measurements_[1]);
+            py = meas_package.raw_measurements_[0] * sin(meas_package.raw_measurements_[1]);
+          }
+          fout << px << "\t"<< py << "\t";
+
+          // gt_px gt_py gt_vx gt_vy
+          fout << x_gt << "\t" << y_gt << "\t" << vx_gt << "\t" << vy_gt << "\t";
+
           estimate(0) = p_x;
           estimate(1) = p_y;
           estimate(2) = v1;
@@ -129,6 +162,9 @@ int main()
 
           VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
           cout << "Accuracy - RMSE:" << endl << RMSE << endl;
+
+          // RMSE(0) RMSE(1) RMSE(2) RMSE(3)
+          fout << RMSE(0) << "\t" << RMSE(1) << "\t" << RMSE(2) << "\t" << RMSE(3) << endl;
 
           json msgJson;
           msgJson["estimate_x"] = p_x;
@@ -183,7 +219,12 @@ int main()
   else
   {
     std::cerr << "Failed to listen to port" << std::endl;
+    fout.close();
     return -1;
   }
+
   h.run();
+
+  fout.close();
+  cout <<"Results stored in file " << fname << endl;
 }
